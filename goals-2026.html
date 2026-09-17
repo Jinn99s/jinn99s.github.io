@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Goal Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#20261f;
+    --ink-soft:#4a5246;
+    --paper:#ede6d3;
+    --paper-raised:#f5f0e2;
+    --rule:#c7bc9d;
+    --rule-soft:#dcd3b8;
+    --brass:#a9781f;
+    --brass-dim:#c99c4c;
+    --teal:#2c5d5a;
+    --teal-dim:#3f7d78;
+    --brick:#8a3f2b;
+    --done-bg:#dce6d4;
+    --shadow: 0 1px 0 rgba(32,38,31,0.06);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Public Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--brass-dim); color:#fff;}
+
+  h1,h2,h3,.display{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  a{color:var(--teal);}
+
+  /* Layout shell */
+  .shell{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    max-width:1180px;
+    margin:0 auto;
+  }
+  @media (max-width: 860px){
+    .shell{ grid-template-columns:1fr; }
+    .rail{ position:static !important; order:2; }
+  }
+
+  /* Sticky rail */
+  .rail{
+    position:sticky;
+    top:0;
+    align-self:start;
+    height:100vh;
+    padding:32px 8px 32px 28px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+  .rail-top .brand{
+    font-family:'Fraunces', serif;
+    font-size:15px;
+    font-weight:600;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    margin-bottom:26px;
+  }
+  .rail nav a{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    text-decoration:none;
+    color:var(--ink);
+    font-size:14.5px;
+    padding:9px 0;
+    border-bottom:1px solid transparent;
+  }
+  .rail nav a .idx{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--brass);
+    width:16px;
+  }
+  .rail nav a:hover{ color:var(--teal); }
+  .rail-foot{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    line-height:1.5;
+    padding-top:18px;
+    border-top:1px solid var(--rule-soft);
+  }
+
+  main{ padding:40px 28px 120px; }
+
+  /* Hero / cover */
+  .cover{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:36px;
+    align-items:center;
+    padding:34px 8px 40px;
+    border-bottom:1px solid var(--rule);
+    margin-bottom:44px;
+  }
+  @media (max-width: 700px){ .cover{ grid-template-columns:1fr; } .dial-wrap{ justify-self:center; } }
+  .cover .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--brick);
+    margin-bottom:10px;
+  }
+  .cover h1{ font-size:44px; line-height:1.05; }
+  .cover p{ color:var(--ink-soft); font-size:15.5px; margin-top:14px; max-width:44ch; line-height:1.55; }
+  .cover-stats{ display:flex; gap:22px; margin-top:22px; }
+  .cover-stat .n{ font-family:'JetBrains Mono', monospace; font-size:22px; font-weight:700; }
+  .cover-stat .l{ font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em; }
+
+  .dial-wrap{ position:relative; width:180px; height:180px; }
+  .dial-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .dial-track{ fill:none; stroke:var(--rule-soft); stroke-width:9; }
+  .dial-fill{ fill:none; stroke:var(--brick); stroke-width:9; stroke-linecap:round; transition:stroke-dashoffset 0.6s ease; }
+  .dial-center{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .dial-center .num{ font-family:'JetBrains Mono', monospace; font-size:34px; font-weight:700; line-height:1; }
+  .dial-center .lbl{ font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.08em; margin-top:4px; }
+
+  /* Category sections */
+  section.category{ margin-bottom:64px; scroll-margin-top:24px; }
+  .cat-head{
+    display:flex; align-items:baseline; gap:14px;
+    padding-bottom:12px; border-bottom:2px solid var(--ink);
+    margin-bottom:22px;
+  }
+  .cat-head .idx{ font-family:'JetBrains Mono', monospace; color:var(--brass); font-size:15px; }
+  .cat-head h2{ font-size:26px; }
+  .cat-head .tally{ margin-left:auto; font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--ink-soft); }
+
+  .card{
+    background:var(--paper-raised);
+    border:1px solid var(--rule-soft);
+    border-radius:3px;
+    padding:22px 24px;
+    margin-bottom:16px;
+    box-shadow:var(--shadow);
+  }
+  .card h3{ font-size:18.5px; margin-bottom:6px; }
+  .card .goal-meta{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--teal);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:12px;
+  }
+  .card .framework{ font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:14px; }
+  .card .framework strong{ color:var(--ink); }
+
+  /* Progress bar */
+  .progress{
+    height:8px; background:var(--rule-soft); border-radius:4px; overflow:hidden; margin:10px 0 4px;
+  }
+  .progress > div{ height:100%; background:var(--brass); border-radius:4px; transition:width 0.4s ease; }
+  .progress-label{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--ink-soft); display:flex; justify-content:space-between; }
+
+  /* Checklist */
+  ul.checklist{ list-style:none; margin:12px 0 4px; padding:0; }
+  ul.checklist li{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:7px 0; border-bottom:1px dashed var(--rule-soft);
+    font-size:14.5px;
+  }
+  ul.checklist li:last-child{ border-bottom:none; }
+  ul.checklist input[type=checkbox]{
+    appearance:none; -webkit-appearance:none;
+    width:17px; height:17px; min-width:17px;
+    border:1.5px solid var(--ink-soft); border-radius:3px;
+    margin-top:1px; cursor:pointer; position:relative; background:var(--paper-raised);
+  }
+  ul.checklist input[type=checkbox]:checked{ background:var(--teal); border-color:var(--teal); }
+  ul.checklist input[type=checkbox]:checked::after{
+    content:''; position:absolute; left:5px; top:1.5px;
+    width:4px; height:8px; border:solid white; border-width:0 2px 2px 0; transform:rotate(40deg);
+  }
+  ul.checklist li span.done{ text-decoration:line-through; color:var(--ink-soft); }
+  ul.checklist li .rm{
+    margin-left:auto; background:none; border:none; color:var(--rule); cursor:pointer; font-size:15px; padding:0 4px;
+  }
+  ul.checklist li .rm:hover{ color:var(--brick); }
+
+  .add-row{ display:flex; gap:8px; margin-top:10px; }
+  .add-row input[type=text]{
+    flex:1; border:1px solid var(--rule); background:var(--paper); border-radius:3px;
+    padding:8px 10px; font-family:'Public Sans',sans-serif; font-size:13.5px; color:var(--ink);
+  }
+  .add-row input[type=text]:focus{ outline:2px solid var(--teal-dim); outline-offset:1px; }
+  .add-row button{
+    border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+    border-radius:3px; padding:0 14px; font-size:13px; cursor:pointer; font-family:'Public Sans',sans-serif;
+  }
+  .add-row button:hover{ background:var(--teal); border-color:var(--teal); }
+  .add-row .reset-btn{
+    border:1px solid var(--rule); background:var(--paper); color:var(--ink-soft);
+    font-size:14px; padding:0 10px;
+  }
+  .add-row .reset-btn:hover{ background:var(--paper); color:var(--brick); border-color:var(--brick); }
+
+  /* Log form (career / hobbies / exercise entries) */
+  .log-form{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; }
+  .log-form input, .log-form select{
+    border:1px solid var(--rule); background:var(--paper); border-radius:3px;
+    padding:7px 9px; font-size:13px; font-family:'JetBrains Mono', monospace; color:var(--ink);
+  }
+  .log-form label{ font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-right:-4px;}
+  .log-form button{
+    border:1px solid var(--brass); background:var(--brass); color:#fff;
+    border-radius:3px; padding:7px 14px; font-size:13px; cursor:pointer; font-family:'Public Sans',sans-serif; font-weight:600;
+  }
+  .log-form button:hover{ background:var(--brass-dim); border-color:var(--brass-dim); }
+
+  .log-list{ margin-top:10px; font-size:13px; }
+  .log-list .row{
+    display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed var(--rule-soft);
+    color:var(--ink-soft); font-family:'JetBrains Mono', monospace; font-size:12.5px;
+  }
+  .log-list .row:last-child{ border-bottom:none; }
+  .log-list .row button{ background:none; border:none; color:var(--rule); cursor:pointer; }
+  .log-list .row button:hover{ color:var(--brick); }
+
+  .stat-row{ display:flex; gap:24px; margin-top:14px; flex-wrap:wrap; }
+  .stat-row .stat .n{ font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:700; }
+  .stat-row .stat .l{ font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; }
+
+  .note{
+    font-size:12.5px; color:var(--ink-soft); background:var(--paper);
+    border-left:2px solid var(--brass); padding:8px 12px; margin-top:12px; line-height:1.55;
+  }
+
+  .subgrid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:700px){ .subgrid{ grid-template-columns:1fr; } }
+
+  footer{
+    text-align:center; font-size:12px; color:var(--ink-soft); padding:30px 20px 60px;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="rail">
+    <div class="rail-top">
+      <div class="brand">2026 Ledger</div>
+      <nav>
+        <a href="#career"><span class="idx">01</span> Career</a>
+        <a href="#hobbies"><span class="idx">02</span> Hobbies</a>
+        <a href="#exercise"><span class="idx">03</span> Exercise</a>
+        <a href="#church"><span class="idx">04</span> Church</a>
+        <a href="#responsibilities"><span class="idx">05</span> Responsibilities</a>
+      </nav>
+    </div>
+    <div class="rail-foot">
+      Entries save automatically to this page.<br>Deadline: Dec 31, 2026.
+    </div>
+  </aside>
+
+  <main>
+    <section class="cover">
+      <div>
+        <div class="eyebrow">Season closes Dec 31, 2026</div>
+        <h1>Goal Ledger</h1>
+        <p>Five categories, tracked from today to the last day of the year. Log entries as you go &mdash; the numbers below update themselves.</p>
+        <div class="cover-stats">
+          <div class="cover-stat"><div class="n" id="overallPct">&mdash;</div><div class="l">Checklist complete</div></div>
+          <div class="cover-stat"><div class="n" id="todayDate">&mdash;</div><div class="l">Today</div></div>
+        </div>
+      </div>
+      <div class="dial-wrap">
+        <svg viewBox="0 0 180 180">
+          <circle class="dial-track" cx="90" cy="90" r="80"></circle>
+          <circle class="dial-fill" id="dialFill" cx="90" cy="90" r="80" stroke-dasharray="502.4" stroke-dashoffset="502.4"></circle>
+        </svg>
+        <div class="dial-center">
+          <div class="num" id="daysLeft">&ndash;</div>
+          <div class="lbl">days left</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CAREER -->
+    <section class="category" id="career">
+      <div class="cat-head"><span class="idx">01</span><h2>Career</h2><span class="tally" id="tally-career"></span></div>
+
+      <div class="card">
+        <h3>Submit 250 job applications</h3>
+        <div class="goal-meta">Job search treated as your Mon&ndash;Fri, 8&ndash;5 work &nbsp;|&nbsp; Due Dec 31, 2026</div>
+        <div class="framework">
+          <strong>Yes, this is a reasonable goal.</strong> From today (Aug 12) through Dec 31 there are <strong>102 weekdays</strong> left (about 20.4 work weeks). 250 applications over that stretch works out to:
+          <br>&bull; <strong>~2.5 applications per weekday</strong>
+          <br>&bull; <strong>~12&ndash;13 applications per week</strong>
+          <br>In an 8&ndash;5 job-search day that's very achievable &mdash; it leaves most of your day for the things that actually make an application count: tailoring resumes, networking, follow-ups, and interview prep, rather than mass-applying to hit a number.
+        </div>
+        <div class="note"><strong>SMART:</strong> Specific &mdash; 250 submitted applications. Measurable &mdash; running total logged below. Achievable &mdash; ~2.5/weekday, well inside an 8&ndash;5 day. Relevant &mdash; direct input to landing a job, which unlocks the "Once you land a job" responsibilities. Time-bound &mdash; Dec 31, 2026.</div>
+        <div class="progress"><div id="career-bar" style="width:0%"></div></div>
+        <div class="progress-label"><span id="career-progress-text">0 / 250</span><span id="career-pace-text"></span></div>
+
+        <div class="note">Cumulative checkpoints, roughly every 2 weeks &mdash; adjust if your search picks up or slows down.</div>
+        <ul class="checklist" id="list-career-checkpoints"></ul>
+        <div class="add-row"><input type="text" id="add-career-checkpoints" placeholder="Add a checkpoint..."><button data-add="career-checkpoints">Add</button><button class="reset-btn" data-reset="career-checkpoints" title="Reset to suggested list">&#8635;</button></div>
+
+        <div class="log-form">
+          <label>Date</label><input type="date" id="career-date">
+          <label>Applications</label><input type="number" id="career-count" min="1" style="width:70px" placeholder="#">
+          <button data-log="career">Log applications</button>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><div class="n" id="career-total">0</div><div class="l">Submitted</div></div>
+          <div class="stat"><div class="n" id="career-remaining">250</div><div class="l">Remaining</div></div>
+          <div class="stat"><div class="n" id="career-needed-week">&ndash;</div><div class="l">Needed / week from now</div></div>
+          <div class="stat"><div class="n" id="career-needed-day">&ndash;</div><div class="l">Needed / weekday from now</div></div>
+        </div>
+        <div class="log-list" id="career-log"></div>
+      </div>
+    </section>
+
+    <!-- HOBBIES -->
+    <section class="category" id="hobbies">
+      <div class="cat-head"><span class="idx">02</span><h2>Hobbies</h2><span class="tally" id="tally-hobbies"></span></div>
+
+      <div class="card">
+        <h3>Bring your teacher's handicap down to 5</h3>
+        <div class="goal-meta">Currently 7-point handicap, ~30&ndash;40% win rate &nbsp;|&nbsp; Due Dec 31, 2026</div>
+        <div class="framework">
+          A handicap drop happens in steps, not jumps &mdash; ask your teacher to move you to 6 once you're consistently winning ~50%+ at 7, then to 5 once you're winning consistently at 6. The skills checklist below is what actually closes that gap; casual play alone won't move the needle.
+        </div>
+        <div class="note"><strong>SMART:</strong> Specific &mdash; teacher-assigned handicap of 5. Measurable &mdash; win rate at each handicap, tracked from your match log. Achievable &mdash; one step at a time (7&rarr;6&rarr;5), each unlocked by consistent 50%+ wins. Relevant &mdash; you named this as a hobby goal you actually want to improve at, not just play casually. Time-bound &mdash; Dec 31, 2026.</div>
+        <ul class="checklist" id="list-pingpong-milestones"></ul>
+        <div class="add-row"><input type="text" id="add-pingpong-milestones" placeholder="Add a checkpoint..."><button data-add="pingpong-milestones">Add</button><button class="reset-btn" data-reset="pingpong-milestones" title="Reset to suggested list">&#8635;</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Skills to learn &amp; practice</h3>
+        <div class="goal-meta">What actually moves a 7 &rarr; 5 handicap &nbsp;|&nbsp; Ongoing</div>
+        <div class="framework">
+          Pulled from what intermediate players typically drill on the way down through handicap levels &mdash; check these off once you can do them reliably under match pressure, not just once in practice.
+        </div>
+        <div class="note">Suggested rhythm: 2 practice sessions + 1 lesson per week, rotating focus on 1&ndash;2 skills at a time rather than trying to drill everything at once.</div>
+        <ul class="checklist" id="list-pingpong-skills"></ul>
+        <div class="add-row"><input type="text" id="add-pingpong-skills" placeholder="Add a skill..."><button data-add="pingpong-skills">Add</button><button class="reset-btn" data-reset="pingpong-skills" title="Reset to suggested list">&#8635;</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Match log</h3>
+        <div class="goal-meta">Best of 3 games vs. your teacher</div>
+        <div class="note">Matches are logged as best-of-3. Enter games won and games lost (0&ndash;2 each) &mdash; match result and both win-rate stats are calculated for you.</div>
+        <div class="log-form">
+          <label>Date</label><input type="date" id="pp-date">
+          <label>Handicap</label>
+          <select id="pp-handicap"><option>7</option><option>6</option><option>5</option></select>
+          <label>Games won</label><input type="number" id="pp-games-won" min="0" max="2" style="width:52px">
+          <label>Games lost</label><input type="number" id="pp-games-lost" min="0" max="2" style="width:52px">
+          <button data-log="pp">Log match</button>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><div class="n" id="pp-winrate">&ndash;</div><div class="l">Match win rate (current handicap)</div></div>
+          <div class="stat"><div class="n" id="pp-gamewinrate">&ndash;</div><div class="l">Game win rate (current handicap)</div></div>
+          <div class="stat"><div class="n" id="pp-played">&ndash;</div><div class="l">Matches logged</div></div>
+        </div>
+        <div class="log-list" id="pp-log"></div>
+      </div>
+    </section>
+
+    <!-- EXERCISE -->
+    <section class="category" id="exercise">
+      <div class="cat-head"><span class="idx">03</span><h2>Exercise</h2><span class="tally" id="tally-exercise"></span></div>
+
+      <div class="card">
+        <h3>Run 4.2 miles under 50:58</h3>
+        <div class="goal-meta">Baseline 62:00 &rarr; Aug 27 test: 56:23 &rarr; Target 50:58 &nbsp;|&nbsp; Due Dec 31, 2026</div>
+        <div class="framework">
+          Your Aug 27 test changes the picture: 4.2mi in <strong>56:23</strong> already beats the original Sep 8 checkpoint (under 60:00) by a wide margin and is closing in on the Oct 20 target (under 56:00) &mdash; in week 3. That's a fast start.
+          <br><br>
+          But the effort behind it matters as much as the time. Heart rate sitting above 170 from ~26 minutes and climbing to 180&ndash;188 for the last stretch is a near-maximal effort for most people &mdash; that's race-day intensity, not an "easy base run." Doing that weekly instead of building an aerobic base is how people burn out or get hurt by week 6&ndash;8, even if the watch says they're getting faster right now.
+          <br><br>
+          So the plan below shifts: most weekly runs should feel <strong>conversational</strong> &mdash; you could hold a conversation without gasping. Save hard, near-max efforts for the specific tempo/interval/time-trial days already built into the Build and Sharpen phases. And since you're already ahead of the original targets, the checkpoints below are pulled in to build in more cushion before Dec 31, not to push you harder sooner.
+        </div>
+        <div class="note"><strong>SMART:</strong> Specific &mdash; run 4.2 miles in under 50:58, with a stretch target of under 50:00 for cushion. Measurable &mdash; time trial logged below each test. Achievable &mdash; you're already 4 minutes ahead of the original Sep 8 pace target, so the remaining gap to 50:58 is smaller than it looked a week ago. Relevant &mdash; benchmarked against your Aug 27 test. Time-bound &mdash; Dec 31, 2026.</div>
+        <ul class="checklist" id="list-run-milestones"></ul>
+        <div class="add-row"><input type="text" id="add-run-milestones" placeholder="Add a checkpoint..."><button data-add="run-milestones">Add</button><button class="reset-btn" data-reset="run-milestones" title="Reset to suggested list">&#8635;</button></div>
+
+        <div class="note">Log a time trial below each time you test it &mdash; the fastest one is tracked against your 50:58 target.</div>
+        <div class="log-form">
+          <label>Date</label><input type="date" id="run-date">
+          <label>Min</label><input type="number" id="run-min" min="0" style="width:56px" placeholder="mm">
+          <label>Sec</label><input type="number" id="run-sec" min="0" max="59" style="width:56px" placeholder="ss">
+          <button data-log="run">Log time trial</button>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><div class="n" id="run-best">&ndash;</div><div class="l">Best time</div></div>
+          <div class="stat"><div class="n" id="run-gap">&ndash;</div><div class="l">Gap to target</div></div>
+        </div>
+        <div class="log-list" id="run-log"></div>
+      </div>
+
+      <div class="card">
+        <h3>1 unassisted pull-up / chin-up</h3>
+        <div class="goal-meta">Strength progression &nbsp;|&nbsp; Due Dec 31, 2026</div>
+        <div class="framework">
+          A standard bodyweight-strength progression, 2&ndash;3 non-consecutive days per week &mdash; broken into week-by-week checkpoints below, moving from dead hangs through banded assistance to slow negatives and, eventually, a full unassisted rep.
+        </div>
+        <ul class="checklist" id="list-pullup-milestones"></ul>
+        <div class="add-row"><input type="text" id="add-pullup-milestones" placeholder="Add a checkpoint..."><button data-add="pullup-milestones">Add</button><button class="reset-btn" data-reset="pullup-milestones" title="Reset to suggested list">&#8635;</button></div>
+      </div>
+    </section>
+
+    <!-- CHURCH -->
+    <section class="category" id="church">
+      <div class="cat-head"><span class="idx">04</span><h2>Church</h2><span class="tally" id="tally-church"></span></div>
+
+      <div class="card">
+        <h3>Take the church website from prototype to launch</h3>
+        <div class="goal-meta">Built on your existing prototype &nbsp;|&nbsp; Due Sep 15, 2026</div>
+        <div class="framework">
+          Since the real target is mid-September, not year end, this compresses the same prototype-to-launch path into about three weeks. Adjust the exact dates to fit your church's actual review process, but keep the order &mdash; each step depends on the one before it.
+        </div>
+        <div class="note"><strong>SMART:</strong> Specific &mdash; public launch of the church site. Measurable &mdash; each step below is a checkbox. Achievable &mdash; most of the heavy design work is already done in the prototype. Relevant &mdash; unblocks the year-end growth goal below. Time-bound &mdash; Sep 15, 2026.</div>
+        <ul class="checklist" id="list-church-milestones"></ul>
+        <div class="add-row"><input type="text" id="add-church-milestones" placeholder="Add a milestone..."><button data-add="church-milestones">Add</button><button class="reset-btn" data-reset="church-milestones" title="Reset to suggested list">&#8635;</button></div>
+        <div class="note">Building in a soft launch before the public one gives you a real round of feedback while there's still time to act on it before Sep 15.</div>
+      </div>
+
+      <div class="card">
+        <h3>Grow the site through year-end</h3>
+        <div class="goal-meta">Starts after Sep 15 launch &nbsp;|&nbsp; Due Dec 31, 2026</div>
+        <div class="framework">
+          Launching mid-September leaves over three months to turn the site from "live" into genuinely useful &mdash; gathering real feedback, filling in content that's easy to skip before launch, and building a habit of keeping it current.
+        </div>
+        <ul class="checklist" id="list-church-growth-milestones"></ul>
+        <div class="add-row"><input type="text" id="add-church-growth-milestones" placeholder="Add a milestone..."><button data-add="church-growth-milestones">Add</button><button class="reset-btn" data-reset="church-growth-milestones" title="Reset to suggested list">&#8635;</button></div>
+      </div>
+    </section>
+
+    <!-- RESPONSIBILITIES -->
+    <section class="category" id="responsibilities">
+      <div class="cat-head"><span class="idx">05</span><h2>Responsibilities</h2><span class="tally" id="tally-responsibilities"></span></div>
+      <div class="card">
+        <div class="framework">
+          Pulled from your adulting notes and organized into what you can start now versus what depends on landing a job first. Everything below is editable &mdash; add or remove items as your situation changes.
+        </div>
+      </div>
+
+      <div class="subgrid">
+        <div class="card">
+          <h3>Start now</h3>
+          <div class="goal-meta">Not dependent on income</div>
+          <ul class="checklist" id="list-resp-now"></ul>
+          <div class="add-row"><input type="text" id="add-resp-now" placeholder="Add an item..."><button data-add="resp-now">Add</button><button class="reset-btn" data-reset="resp-now" title="Reset to suggested list">&#8635;</button></div>
+        </div>
+
+        <div class="card">
+          <h3>Once you land a job</h3>
+          <div class="goal-meta">Income-dependent, target within the stated window after your start date</div>
+          <ul class="checklist" id="list-resp-after"></ul>
+          <div class="add-row"><input type="text" id="add-resp-after" placeholder="Add an item..."><button data-add="resp-after">Add</button><button class="reset-btn" data-reset="resp-after" title="Reset to suggested list">&#8635;</button></div>
+          <div class="note">If your job search runs past Dec 31, treat this half of the list as carrying into early 2027 rather than as a missed goal &mdash; it was always sequenced after Career, not against the same deadline.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>Built for your 2026 goals &middot; last opened <span id="lastOpened"></span></footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  // ---------- storage shim: window.storage if present, else localStorage, else in-memory ----------
+  const memStore = {};
+  const storage = {
+    async get(key){
+      try{
+        if (window.storage && window.storage.get) return await window.storage.get(key, false);
+      }catch(e){}
+      try{
+        const v = localStorage.getItem('ledger:'+key);
+        if (v !== null) return { key, value: v, shared:false };
+      }catch(e){}
+      if (key in memStore) return { key, value: memStore[key], shared:false };
+      return null;
+    },
+    async set(key, value){
+      try{
+        if (window.storage && window.storage.set) { await window.storage.set(key, value, false); }
+      }catch(e){}
+      try{ localStorage.setItem('ledger:'+key, value); }catch(e){}
+      memStore[key] = value;
+    }
+  };
+
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const uid = () => Math.random().toString(36).slice(2,9);
+
+  // ---------- defaults ----------
+  const defaults = {
+    'run-milestones': [
+      {id:uid(), text:'Aug 27 test &mdash; 4.2mi in 56:23, but HR sat 170&ndash;188 for much of it &mdash; that was a near-max effort, not an easy run', done:true},
+      {id:uid(), text:'Week of Aug 31 &mdash; all 3 runs at conversational/easy effort (no time trials); let legs recover from Sunday\'s hard push', done:false},
+      {id:uid(), text:'Week of Sep 7 &mdash; Base ends: 2 easy runs + 1 controlled-pace (not max-effort) check &mdash; aim under 55:00 without gassing yourself; add 1st tempo/interval session', done:false},
+      {id:uid(), text:'Week of Sep 14 &mdash; 2 easy runs + 1 interval session (e.g. 6x400m)', done:false},
+      {id:uid(), text:'Week of Sep 21 &mdash; 2 easy runs + 1 tempo run (2mi near goal pace) &mdash; this is where hard effort belongs, not every run', done:false},
+      {id:uid(), text:'Week of Sep 28 &mdash; 2 easy runs + 1 interval session; time trial check, target under 54:00', done:false},
+      {id:uid(), text:'Week of Oct 5 &mdash; 2 easy runs + 1 tempo run', done:false},
+      {id:uid(), text:'Week of Oct 12 &mdash; 2 easy runs + 1 interval session', done:false},
+      {id:uid(), text:'Week of Oct 19 &mdash; Build ends: time trial under 52:30 by Oct 20', done:false},
+      {id:uid(), text:'Week of Oct 26 &mdash; Sharpen begins: race-pace intervals, 2x this week', done:false},
+      {id:uid(), text:'Week of Nov 2 &mdash; race-pace intervals + 1 time trial', done:false},
+      {id:uid(), text:'Week of Nov 9 &mdash; race-pace intervals; trim easy mileage slightly', done:false},
+      {id:uid(), text:'Week of Nov 16 &mdash; time trial under 51:00', done:false},
+      {id:uid(), text:'Week of Nov 23 &mdash; race-pace intervals, hold pace', done:false},
+      {id:uid(), text:'Week of Nov 30 &mdash; Sharpen ends: time trial under 50:00 &mdash; cushion under the 50:58 target', done:false},
+      {id:uid(), text:'Week of Dec 7 &mdash; Taper begins: reduce volume, 1 sharpening session, 1st official attempt', done:false},
+      {id:uid(), text:'Week of Dec 14 &mdash; light maintenance; 2nd attempt if needed', done:false},
+      {id:uid(), text:'Week of Dec 21 &mdash; very light week, built-in rest; 3rd attempt if needed', done:false},
+      {id:uid(), text:'Week of Dec 28 &mdash; final attempt window: comfortably under 50:58 by Dec 31', done:false},
+    ],
+    'pullup-milestones': [
+      {id:uid(), text:'Week of Aug 24 &mdash; dead hangs + scap pulls + banded rows, build to a 15 sec hang', done:false},
+      {id:uid(), text:'Week of Aug 31 &mdash; build to a 25 sec hang, heavier banded rows', done:false},
+      {id:uid(), text:'Week of Sep 7 &mdash; build to a 35&ndash;45 sec hang; add heavy-band assisted pull-ups, 3x3', done:false},
+      {id:uid(), text:'Week of Sep 14 &mdash; heavy-band assisted pull-ups, 3 sets of 5', done:false},
+      {id:uid(), text:'Week of Sep 21 &mdash; heavy-band assisted, 3x5, hold steady', done:false},
+      {id:uid(), text:'Week of Sep 28 &mdash; switch to medium-band assisted, 3x5', done:false},
+      {id:uid(), text:'Week of Oct 5 &mdash; medium-band 3x5 + 1 slow negative rep', done:false},
+      {id:uid(), text:'Week of Oct 12 &mdash; medium-band 3x5 + 2 slow negatives', done:false},
+      {id:uid(), text:'Week of Oct 19 &mdash; switch to light-band assisted, 3x5', done:false},
+      {id:uid(), text:'Week of Oct 26 &mdash; light-band 3x5 + negatives', done:false},
+      {id:uid(), text:'Week of Nov 2 &mdash; slow negatives (5+ sec descent), little or no band, 3 reps', done:false},
+      {id:uid(), text:'Week of Nov 9 &mdash; negatives + occasional light-band attempts', done:false},
+      {id:uid(), text:'Week of Nov 16 &mdash; negatives; first near-attempt at a full rep', done:false},
+      {id:uid(), text:'Week of Nov 23 &mdash; attempt a full unassisted rep weekly', done:false},
+      {id:uid(), text:'Week of Nov 30 &mdash; continue weekly attempts, keep strength work going', done:false},
+      {id:uid(), text:'Week of Dec 7 &mdash; continue weekly attempts', done:false},
+      {id:uid(), text:'Week of Dec 14 &mdash; continue weekly attempts', done:false},
+      {id:uid(), text:'Week of Dec 21 &mdash; continue weekly attempts, buffer week', done:false},
+      {id:uid(), text:'Week of Dec 28 &mdash; final attempt window before Dec 31', done:false},
+    ],
+    'career-checkpoints': [
+      {id:uid(), text:'By Sep 6 &mdash; 25 applications submitted', done:false},
+      {id:uid(), text:'By Sep 20 &mdash; 50 applications submitted', done:false},
+      {id:uid(), text:'By Oct 4 &mdash; 75 applications submitted', done:false},
+      {id:uid(), text:'By Oct 18 &mdash; 100 applications submitted', done:false},
+      {id:uid(), text:'By Nov 1 &mdash; 125 applications submitted', done:false},
+      {id:uid(), text:'By Nov 15 &mdash; 150 applications submitted', done:false},
+      {id:uid(), text:'By Nov 29 &mdash; 175 applications submitted', done:false},
+      {id:uid(), text:'By Dec 13 &mdash; 200 applications submitted', done:false},
+      {id:uid(), text:'By Dec 27 &mdash; 225 applications submitted', done:false},
+      {id:uid(), text:'By Dec 31 &mdash; 250 applications submitted', done:false},
+    ],
+    'pingpong-milestones': [
+      {id:uid(), text:'Win 50%+ of matches at 7-point handicap', done:false},
+      {id:uid(), text:'Teacher moves you to 6-point handicap', done:false},
+      {id:uid(), text:'Win 50%+ of matches at 6-point handicap', done:false},
+      {id:uid(), text:'Teacher moves you to 5-point handicap', done:false},
+    ],
+    'pingpong-skills': [
+      {id:uid(), text:'Consistent short serve &mdash; stays low, bounces twice in the service box', done:false},
+      {id:uid(), text:'Long, fast serve aimed at the backhand corner', done:false},
+      {id:uid(), text:'Backspin vs. no-spin serve that look the same on contact', done:false},
+      {id:uid(), text:'Backhand drive, 10 in a row cross-court', done:false},
+      {id:uid(), text:'Forehand loop off backspin', done:false},
+      {id:uid(), text:'Third-ball attack off your own serve', done:false},
+      {id:uid(), text:'Footwork &mdash; recover to ready position after every shot', done:false},
+      {id:uid(), text:'Reading spin off your opponent\'s paddle angle before the ball arrives', done:false},
+      {id:uid(), text:'Staying composed after a bad shot instead of tilting into the next point', done:false},
+    ],
+    'church-milestones': [
+      {id:uid(), text:'Prototype / initial design complete', done:true},
+      {id:uid(), text:'Collect final content (bio, service times, sermons, events) &mdash; Aug 30', done:false},
+      {id:uid(), text:'Leadership review & sign-off on design &mdash; Sep 3', done:false},
+      {id:uid(), text:'Build remaining pages / functionality &mdash; Sep 8', done:false},
+      {id:uid(), text:'Test across devices & browsers &mdash; Sep 11', done:false},
+      {id:uid(), text:'Soft launch to a few church members &mdash; Sep 13', done:false},
+      {id:uid(), text:'Public launch &mdash; by Sep 15', done:false},
+    ],
+    'church-growth-milestones': [
+      {id:uid(), text:'Collect feedback from the first 20 site visitors / members &mdash; Sep 30', done:false},
+      {id:uid(), text:'Add sermon archive / media library &mdash; Oct 15', done:false},
+      {id:uid(), text:'Add event calendar with sign-ups &mdash; Nov 1', done:false},
+      {id:uid(), text:'Set up basic analytics and review traffic monthly', done:false},
+      {id:uid(), text:'Publish at least 1 update/announcement per month through December', done:false},
+      {id:uid(), text:'Year-end review with leadership on priorities for 2027', done:false},
+    ],
+    'resp-now': [
+      {id:uid(), text:'Learn 8 healthy meals you can cook without a recipe', done:false},
+      {id:uid(), text:'Keep a weekly cleaning routine (trash/recycling, dishes, laundry) for 15 straight weeks', done:false},
+      {id:uid(), text:'Learn to unclog a drain', done:false},
+      {id:uid(), text:'Learn to reset a breaker', done:false},
+      {id:uid(), text:'Learn to change an air filter', done:false},
+      {id:uid(), text:'Know where your water shutoff is and how to use it', done:false},
+      {id:uid(), text:'Practice naming a need or resolving a conflict directly &mdash; monthly check-in', done:false},
+      {id:uid(), text:'Stay in regular contact with 2&ndash;3 close friends/family', done:false},
+    ],
+    'resp-after': [
+      {id:uid(), text:'Build a basic monthly budget within 30 days of first paycheck', done:false},
+      {id:uid(), text:'Open an emergency fund + set an automatic monthly contribution within 60 days', done:false},
+      {id:uid(), text:'Set up a simple system for bills, pay stubs, and tax docs within 30 days', done:false},
+      {id:uid(), text:'Actually schedule (not just check) your own medical/dental appointments', done:false},
+    ],
+  };
+
+  const checklistKeys = ['run-milestones','pullup-milestones','pingpong-milestones','pingpong-skills','career-checkpoints','church-milestones','church-growth-milestones','resp-now','resp-after'];
+  // Bumping the storage key for a list forces a fresh load of its new defaults,
+  // instead of showing whatever got saved to this browser under the old plan.
+  const storageKeyOverrides = { 'run-milestones':'run-milestones-v3' };
+  function storageKeyFor(key){ return 'checklist:' + (storageKeyOverrides[key] || key); }
+  let state = {}; // key -> array
+
+  // ---------- generic checklist render/save ----------
+  function renderChecklist(key){
+    const ul = document.getElementById('list-'+key);
+    if (!ul) return;
+    ul.innerHTML = '';
+    (state[key]||[]).forEach(item => {
+      const li = document.createElement('li');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = !!item.done;
+      cb.addEventListener('change', () => { item.done = cb.checked; saveChecklist(key); renderChecklist(key); updateAll(); });
+      const span = document.createElement('span');
+      span.innerHTML = item.text;
+      if (item.done) span.classList.add('done');
+      const rm = document.createElement('button');
+      rm.className = 'rm'; rm.textContent = '✕';
+      rm.title = 'Remove';
+      rm.addEventListener('click', () => {
+        state[key] = state[key].filter(i => i.id !== item.id);
+        saveChecklist(key); renderChecklist(key); updateAll();
+      });
+      li.appendChild(cb); li.appendChild(span); li.appendChild(rm);
+      ul.appendChild(li);
+    });
+  }
+  async function saveChecklist(key){
+    await storage.set(storageKeyFor(key), JSON.stringify(state[key]||[]));
+  }
+
+  $$('.add-row button[data-add]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-add');
+      const input = document.getElementById('add-'+key);
+      const val = (input.value||'').trim();
+      if (!val) return;
+      state[key] = state[key] || [];
+      state[key].push({id:uid(), text: val, done:false});
+      input.value = '';
+      saveChecklist(key); renderChecklist(key); updateAll();
+    });
+  });
+  $$('.add-row button[data-reset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-reset');
+      if (!confirm('Reset this list back to the suggested defaults? This clears any changes or checked-off progress on this list.')) return;
+      state[key] = JSON.parse(JSON.stringify(defaults[key]));
+      saveChecklist(key); renderChecklist(key); updateAll();
+    });
+  });
+  $$('.add-row input[type=text]').forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.nextElementSibling.click(); });
+  });
+
+  // ---------- exercise: run log ----------
+  let runLog = [];
+  const defaultRunLog = [
+    {id:uid(), date:'2026-08-27', min:56, sec:23}
+  ];
+  async function loadRunLog(){
+    const r = await storage.get('run-log');
+    runLog = r ? JSON.parse(r.value) : defaultRunLog;
+  }
+  function renderRunLog(){
+    const box = document.getElementById('run-log');
+    box.innerHTML = '';
+    runLog.slice().reverse().forEach(entry => {
+      const row = document.createElement('div'); row.className = 'row';
+      const t = String(entry.min).padStart(2,'0')+':'+String(entry.sec).padStart(2,'0');
+      row.innerHTML = `<span>${entry.date} &mdash; ${t}</span>`;
+      const rm = document.createElement('button'); rm.textContent='✕';
+      rm.addEventListener('click', () => { runLog = runLog.filter(e=>e.id!==entry.id); saveRunLog(); renderRunLog(); updateRunStats(); });
+      row.appendChild(rm);
+      box.appendChild(row);
+    });
+    updateRunStats();
+  }
+  async function saveRunLog(){ await storage.set('run-log', JSON.stringify(runLog)); }
+  function updateRunStats(){
+    const TARGET = 50*60+58;
+    if (!runLog.length){
+      document.getElementById('run-best').textContent = '—';
+      document.getElementById('run-gap').textContent = '—';
+      return;
+    }
+    let best = runLog.reduce((a,b)=> (a.min*60+a.sec) < (b.min*60+b.sec) ? a : b);
+    const bestSec = best.min*60+best.sec;
+    document.getElementById('run-best').textContent = String(best.min).padStart(2,'0')+':'+String(best.sec).padStart(2,'0');
+    const gap = bestSec - TARGET;
+    document.getElementById('run-gap').textContent = gap <= 0 ? 'Target hit 🎉' : ('-' + Math.floor(gap/60) + ':' + String(gap%60).padStart(2,'0'));
+  }
+  document.querySelector('[data-log="run"]').addEventListener('click', () => {
+    const date = document.getElementById('run-date').value;
+    const min = parseInt(document.getElementById('run-min').value, 10);
+    const sec = parseInt(document.getElementById('run-sec').value, 10) || 0;
+    if (!date || isNaN(min)) return;
+    runLog.push({id:uid(), date, min, sec});
+    saveRunLog(); renderRunLog();
+    document.getElementById('run-min').value=''; document.getElementById('run-sec').value='';
+  });
+
+  // ---------- hobbies: ping pong log (best of 3 games per match) ----------
+  let ppLog = [];
+  async function loadPpLog(){
+    const r = await storage.get('pp-log');
+    ppLog = r ? JSON.parse(r.value) : [];
+  }
+  function renderPpLog(){
+    const box = document.getElementById('pp-log');
+    box.innerHTML = '';
+    ppLog.slice().reverse().forEach(entry => {
+      const row = document.createElement('div'); row.className='row';
+      row.innerHTML = `<span>${entry.date} &mdash; hcp ${entry.handicap} &mdash; ${entry.gamesWon}-${entry.gamesLost} (${entry.result})</span>`;
+      const rm = document.createElement('button'); rm.textContent='✕';
+      rm.addEventListener('click', () => { ppLog = ppLog.filter(e=>e.id!==entry.id); savePpLog(); renderPpLog(); });
+      row.appendChild(rm);
+      box.appendChild(row);
+    });
+    updatePpStats();
+  }
+  async function savePpLog(){ await storage.set('pp-log', JSON.stringify(ppLog)); }
+  function updatePpStats(){
+    const current = document.getElementById('pp-handicap').value;
+    const rel = ppLog.filter(e => String(e.handicap) === String(current));
+    const matchWins = rel.filter(e => e.result==='win').length;
+    let gamesWonTotal = 0, gamesPlayedTotal = 0;
+    rel.forEach(e => { gamesWonTotal += e.gamesWon; gamesPlayedTotal += e.gamesWon + e.gamesLost; });
+    document.getElementById('pp-played').textContent = ppLog.length;
+    document.getElementById('pp-winrate').textContent = rel.length ? Math.round(100*matchWins/rel.length)+'%' : '—';
+    document.getElementById('pp-gamewinrate').textContent = gamesPlayedTotal ? Math.round(100*gamesWonTotal/gamesPlayedTotal)+'%' : '—';
+  }
+  document.querySelector('[data-log="pp"]').addEventListener('click', () => {
+    const date = document.getElementById('pp-date').value;
+    const handicap = document.getElementById('pp-handicap').value;
+    const gamesWon = parseInt(document.getElementById('pp-games-won').value, 10);
+    const gamesLost = parseInt(document.getElementById('pp-games-lost').value, 10);
+    if (!date || isNaN(gamesWon) || isNaN(gamesLost)) return;
+    const result = gamesWon > gamesLost ? 'win' : 'loss';
+    ppLog.push({id:uid(), date, handicap, gamesWon, gamesLost, result});
+    savePpLog(); renderPpLog();
+    document.getElementById('pp-games-won').value=''; document.getElementById('pp-games-lost').value='';
+  });
+  document.getElementById('pp-handicap').addEventListener('change', updatePpStats);
+
+  // ---------- career: applications log ----------
+  let careerLog = [];
+  const CAREER_TARGET = 250;
+  const SPRINT_END = new Date(2026,11,31); // Dec 31 2026
+  const defaultCareerLog = [
+    {id:uid(), date:'2026-08-26', count:2}
+  ];
+  async function loadCareerLog(){
+    const r = await storage.get('career-log');
+    careerLog = r ? JSON.parse(r.value) : defaultCareerLog;
+  }
+  function weekdaysBetween(start, end){
+    let d = new Date(start); let count = 0;
+    while (d <= end){
+      const day = d.getDay();
+      if (day !== 0 && day !== 6) count++;
+      d.setDate(d.getDate()+1);
+    }
+    return count;
+  }
+  function renderCareerLog(){
+    const box = document.getElementById('career-log');
+    box.innerHTML = '';
+    careerLog.slice().reverse().forEach(entry => {
+      const row = document.createElement('div'); row.className='row';
+      row.innerHTML = `<span>${entry.date} &mdash; ${entry.count} application${entry.count==1?'':'s'}</span>`;
+      const rm = document.createElement('button'); rm.textContent='✕';
+      rm.addEventListener('click', () => { careerLog = careerLog.filter(e=>e.id!==entry.id); saveCareerLog(); renderCareerLog(); updateCareerStats(); });
+      row.appendChild(rm);
+      box.appendChild(row);
+    });
+    updateCareerStats();
+  }
+  async function saveCareerLog(){ await storage.set('career-log', JSON.stringify(careerLog)); }
+  function updateCareerStats(){
+    const total = careerLog.reduce((s,e)=>s+e.count,0);
+    const remaining = Math.max(0, CAREER_TARGET - total);
+    document.getElementById('career-total').textContent = total;
+    document.getElementById('career-remaining').textContent = remaining;
+    document.getElementById('career-progress-text').textContent = total + ' / ' + CAREER_TARGET;
+    document.getElementById('career-bar').style.width = Math.min(100, 100*total/CAREER_TARGET) + '%';
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const wd = Math.max(1, weekdaysBetween(today, SPRINT_END));
+    const wk = wd/5;
+    document.getElementById('career-needed-day').textContent = (remaining/wd).toFixed(1);
+    document.getElementById('career-needed-week').textContent = (remaining/wk).toFixed(1);
+    document.getElementById('career-pace-text').textContent = remaining === 0 ? 'Target reached 🎉' : ('~'+(remaining/wd).toFixed(1)+' / weekday to stay on pace');
+  }
+  document.querySelector('[data-log="career"]').addEventListener('click', () => {
+    const date = document.getElementById('career-date').value;
+    const count = parseInt(document.getElementById('career-count').value, 10);
+    if (!date || !count) return;
+    careerLog.push({id:uid(), date, count});
+    saveCareerLog(); renderCareerLog();
+    document.getElementById('career-count').value='';
+  });
+
+  // ---------- top dial / overall stats ----------
+  function updateDial(){
+    const START = new Date(2026,7,12); // Aug 12 2026
+    const END = new Date(2026,11,31);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const totalMs = END - START;
+    const elapsedMs = Math.min(Math.max(today-START,0), totalMs);
+    const pct = totalMs > 0 ? elapsedMs/totalMs : 1;
+    const daysLeft = Math.max(0, Math.ceil((END - today)/(1000*60*60*24)));
+    const circumference = 2*Math.PI*80;
+    const offset = circumference*(1-pct);
+    document.getElementById('dialFill').style.strokeDasharray = circumference;
+    document.getElementById('dialFill').style.strokeDashoffset = offset;
+    document.getElementById('daysLeft').textContent = daysLeft;
+    document.getElementById('todayDate').textContent = today.toLocaleDateString(undefined,{month:'short', day:'numeric'});
+    document.getElementById('lastOpened').textContent = today.toLocaleDateString(undefined,{year:'numeric', month:'short', day:'numeric'});
+  }
+
+  function tallyFor(keys){
+    let done=0, tot=0;
+    keys.forEach(k => { (state[k]||[]).forEach(i => { tot++; if(i.done) done++; }); });
+    return {done, tot};
+  }
+  function setTally(elId, keys){
+    const {done, tot} = tallyFor(keys);
+    document.getElementById(elId).textContent = tot ? `${done} / ${tot}` : '';
+  }
+  function updateAll(){
+    setTally('tally-exercise', ['run-milestones','pullup-milestones']);
+    setTally('tally-hobbies', ['pingpong-milestones','pingpong-skills']);
+    setTally('tally-career', ['career-checkpoints']);
+    setTally('tally-church', ['church-milestones','church-growth-milestones']);
+    setTally('tally-responsibilities', ['resp-now','resp-after']);
+    const overall = tallyFor(checklistKeys);
+    document.getElementById('overallPct').textContent = overall.tot ? Math.round(100*overall.done/overall.tot)+'%' : '—';
+  }
+
+  // ---------- init ----------
+  async function init(){
+    for (const key of checklistKeys){
+      const r = await storage.get(storageKeyFor(key));
+      state[key] = r ? JSON.parse(r.value) : defaults[key];
+      renderChecklist(key);
+    }
+    await loadRunLog(); renderRunLog();
+    await loadPpLog(); renderPpLog();
+    await loadCareerLog(); renderCareerLog();
+    updateDial();
+    updateAll();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
